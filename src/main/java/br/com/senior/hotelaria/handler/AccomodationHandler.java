@@ -1,4 +1,4 @@
-package br.com.senior.hotelaria.resource;
+package br.com.senior.hotelaria.handler;
 
 import java.util.List;
 import java.util.Optional;

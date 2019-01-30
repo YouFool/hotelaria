@@ -20,6 +20,12 @@ import br.com.senior.hotelaria.model.CustomerEntity;
 import br.com.senior.hotelaria.repository.accomodation.AccomodationRepository;
 import br.com.senior.hotelaria.repository.customer.CustomerRepository;
 
+/**
+ * Serviço para o gerenciamento de estadias.
+ * 
+ * @author João Heckmann
+ *
+ */
 @Service
 public class AccomodationService {
 
@@ -27,22 +33,34 @@ public class AccomodationService {
 	private AccomodationRepository accomodationRepository;
 
 	@Autowired
-	private CustomerRepository hospedeRepository;
-	
-	public AccommodationEntity doCheckIn(AccommodationEntity accomodationRequest) {
-		// Crio um novo objeto Estadia e salvo no banco com a data de entrada
-		AccommodationEntity accomodationCheckIn = new AccommodationEntity();
-		Optional<CustomerEntity> customerFound = hospedeRepository.findById(accomodationRequest.getCustomer().getId());
+	private CustomerRepository customerRepository;
 
+	/**
+	 * Realiza o Check-in conforme o DTO da requisição.
+	 * 
+	 * @param accomodationRequest Requisição.
+	 * @return {@link AccommodationEntity} Estadia criada.
+	 */
+	@Transactional
+	public AccommodationEntity doCheckIn(AccommodationEntity accomodationRequest) {
+		AccommodationEntity accomodationCheckIn = new AccommodationEntity();
+		Optional<CustomerEntity> customerFound = customerRepository.findById(accomodationRequest.getCustomer().getId());
+
+		accomodationCheckIn.setGarageNeeded(accomodationRequest.isGarageNeeded());
 		accomodationCheckIn.setCustomer(customerFound.orElse(null));
 		accomodationCheckIn.setCheckInDate(LocalDateTime.now());
-		accomodationCheckIn.setGarageNeeded(accomodationRequest.isGarageNeeded());
 		accomodationCheckIn.setActive(true);
 		accomodationCheckIn.setCheckOutDate(null);
 		accomodationCheckIn.setAccomodationValue(0);
 		return accomodationRepository.save(accomodationCheckIn);
 	}
 
+	/**
+	 * Realiza o Check-out conforme o DTO da requisição.
+	 * 
+	 * @param accomodationRequest Requisição.
+	 * @return {@link AccommodationEntity} Estadia finalizada.
+	 */
 	@Transactional
 	public AccommodationEntity doCheckOut(AccommodationEntity accomodationRequest) {
 		// Recupero o objeto Estadia
@@ -53,8 +71,9 @@ public class AccomodationService {
 			AccommodationEntity accomodationCheckout = accomodationFound.get();
 			// Insiro a data e a hora do checkOut
 			if (accomodationCheckout.getCheckOutDate() != null) {
-				throw new IllegalAccessError("Estadia já finalizada");
+				throw new IllegalStateException("Estadia já finalizada");
 			}
+
 			accomodationCheckout.setCheckOutDate(LocalDateTime.now());
 
 			// Seto a estadia como terminada
@@ -159,8 +178,7 @@ public class AccomodationService {
 	 * @return Valor da última estadia.
 	 */
 	public double findLastAccomodationValue(Long customerId) {
-		AccommodationEntity lastAccomodation = accomodationRepository.findTopByCustomerIdOrderByIdDesc(customerId);
-		return lastAccomodation.getAccomodationValue();
+		return accomodationRepository.findTopByCustomerIdOrderByIdDesc(customerId).getAccomodationValue();
 	}
 
 	/**

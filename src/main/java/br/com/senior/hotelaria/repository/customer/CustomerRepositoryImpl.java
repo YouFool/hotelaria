@@ -42,7 +42,10 @@ public class CustomerRepositoryImpl implements CustomerRepositoryCustom {
 			predicate.or(customer.phone.toUpperCase().like("%" + phone.toUpperCase() + "%"));
 		}
 
-		return new JPAQuery<CustomerEntity>(em).from(customer).where(predicate).fetch();
+		return new JPAQuery<CustomerEntity>(em) //
+				.from(customer) //
+				.where(predicate) //
+				.fetch();
 	}
 
 }
