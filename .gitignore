@@ -2,5 +2,8 @@
 .classpath
 .project
 .settings/
-
+.idea
+target/
+mvnw
+mvnw.cmd
 /target/
