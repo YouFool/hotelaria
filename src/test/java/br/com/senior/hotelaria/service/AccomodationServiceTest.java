@@ -6,10 +6,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
+import javax.persistence.EntityNotFoundException;
+
+import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -69,27 +74,82 @@ public class AccomodationServiceTest {
 	}
 
 	@Test
-	public void should_do_check_out_() {
-		// cenario
+	public void should_do_check_out() {
 		AccommodationEntity request = oneAccomodation().build();
-		LocalDateTime doisDiasAtras = LocalDateTime.now().minus(2, ChronoUnit.DAYS);
+		LocalDateTime twoDaysAgo = LocalDateTime.now().minus(2, ChronoUnit.DAYS);
 
 		AccommodationEntity foundAccomodation = oneAccomodation() //
-				.withCheckInDate(doisDiasAtras) //
+				.withCheckInDate(twoDaysAgo) //
 				.build();
 
 		when(accomodationRepository.findById(request.getId())).thenReturn(Optional.of(foundAccomodation));
 
-		// acao
 		service.doCheckOut(request);
 
 		ArgumentCaptor<AccommodationEntity> argCaptor = ArgumentCaptor.forClass(AccommodationEntity.class);
 		verify(accomodationRepository).save(argCaptor.capture());
 		AccommodationEntity result = argCaptor.getValue();
 
-		// validacao
 		assertThat(result.isActive()).isEqualTo(false);
 		assertThat(result.getCheckOutDate()).isNotNull();
 	}
+	
+	@Test
+	public void should_not_do_checkout_when_already_has_checkout_date() {
+		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime twoDaysAgo = now.minus(2, ChronoUnit.DAYS);
 
+		AccommodationEntity request = oneAccomodation() //
+				.withCheckInDate(twoDaysAgo) //
+				.withCheckOutDate(now) //
+				.build();
+		
+		when(accomodationRepository.findById(request.getId())).thenReturn(Optional.of(request));
+		
+		try {
+			service.doCheckOut(request);
+			Assertions.failBecauseExceptionWasNotThrown(IllegalStateException.class);
+		} catch (IllegalStateException e) {
+			assertThat(e.getMessage()).isEqualTo("Estadia já finalizada");
+		}
+	}
+	
+	@Test
+	public void should_throw_exception_when_entity_is_not_found() {
+		LocalDateTime now = LocalDateTime.now();
+		AccommodationEntity request = oneAccomodation() //
+				.withCustomer(oneCustomer().withName("cliente").build()) //
+				.withCheckOutDate(now) //
+				.build();
+		
+		when(accomodationRepository.findById(request.getId())).thenReturn(Optional.empty());
+		
+		try {
+			service.doCheckOut(request);
+			Assertions.failBecauseExceptionWasNotThrown(EntityNotFoundException.class);
+		} catch (EntityNotFoundException e) {
+			assertThat(e.getMessage()).contains(request.getCustomer().getName());
+		}
+	}
+	
+	@Test
+	public void should_add_one_more_day_if_checkout_is_after_noon() {
+		LocalDateTime checkIn = LocalDateTime.of(LocalDate.of(2019, 3, 6), LocalTime.of(16, 00));
+		LocalDateTime checkOutDate = LocalDateTime.of(LocalDate.of(2019, 3, 7), LocalTime.of(16, 31));
+		
+		double result = service.calculateTotalAccomodationValue(checkIn, checkOutDate, true);
+		
+		assertThat(result).isEqualTo(270);
+	}
+	
+	@Test
+	public void should_add_one_day_if_checkout_is_on_the_same_day() {
+		LocalDateTime checkIn = LocalDateTime.of(LocalDate.of(2019, 3, 9), LocalTime.of(16, 00));
+		LocalDateTime checkOutDate = LocalDateTime.of(LocalDate.of(2019, 3, 9), LocalTime.of(16, 31));
+		
+		double result = service.calculateTotalAccomodationValue(checkIn, checkOutDate, true);
+		
+		assertThat(result).isEqualTo(170);
+	}
+	
 }

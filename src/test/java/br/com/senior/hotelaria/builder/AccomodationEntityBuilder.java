@@ -97,9 +97,20 @@ public class AccomodationEntityBuilder {
 	}
 
 	/**
+	 * Seta uma data específica para o check-in.
+	 * 
+	 * @param date {@link LocalDateTime} Data a ser setada.
+	 */
+	public AccomodationEntityBuilder withCheckOutDate(LocalDateTime date) {
+		entity.setCheckOutDate(date);
+		return this;
+	}
+
+	/**
 	 * Retorna a instância construída.
 	 */
 	public AccommodationEntity build() {
 		return this.entity;
 	}
+
 }

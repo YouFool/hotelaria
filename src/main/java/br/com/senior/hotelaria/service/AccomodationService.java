@@ -86,8 +86,7 @@ public class AccomodationService {
 
 			return accomodationRepository.save(accomodationCheckout);
 		}
-		throw new EntityNotFoundException(
-				"Estadia do hóspede '" + accomodationRequest.getCustomer().getName() + "' não encontrada!");
+		throw new EntityNotFoundException("Estadia do hóspede '" + accomodationRequest.getCustomer().getName() + "' não encontrada!");
 	}
 
 	/**
@@ -98,7 +97,7 @@ public class AccomodationService {
 	 * @param isGarageNeeded Foi requisitado ou não garagem.
 	 * @return Valor total da estadia.
 	 */
-	private double calculateTotalAccomodationValue(LocalDateTime checkInDate, LocalDateTime checkOutDate,
+	protected double calculateTotalAccomodationValue(LocalDateTime checkInDate, LocalDateTime checkOutDate,
 			boolean isGarageNeeded) {
 
 		// Feito aqui para melhorar a leitura do código
@@ -106,8 +105,10 @@ public class AccomodationService {
 		LocalDate checkOut = checkOutDate.toLocalDate();
 
 		Period accomodationPeriod = Period.between(checkIn, checkOut);
+		
+		boolean isAfterPeriod = checkOutDate.toLocalTime().isAfter(LocalTime.of(16, 30));
 
-		if (accomodationPeriod.getDays() == 0) {
+		if (accomodationPeriod.getDays() == 0 || isAfterPeriod) {
 			accomodationPeriod = accomodationPeriod.plusDays(1);
 		}
 
@@ -117,11 +118,6 @@ public class AccomodationService {
 		for (int i = 0; i < accomodationPeriod.getDays(); i++) {
 			accomodationTotalValue += this.calculateDailyValueByGarageAndWeekday(isGarageNeeded, checkIn);
 			checkIn = checkIn.plusDays(1);
-		}
-
-		// Caso a data de saída seja depois das 16:30, é cobrada mais uma diária
-		if (checkOutDate.toLocalTime().isAfter(LocalTime.of(16, 30))) {
-			accomodationTotalValue += this.calculateDailyValueByGarageAndWeekday(isGarageNeeded, checkIn);
 		}
 
 		return accomodationTotalValue;

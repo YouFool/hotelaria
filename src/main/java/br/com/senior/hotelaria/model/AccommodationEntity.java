@@ -1,6 +1,7 @@
 package br.com.senior.hotelaria.model;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
