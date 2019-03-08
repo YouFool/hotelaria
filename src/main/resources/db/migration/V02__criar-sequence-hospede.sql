@@ -1,1 +1,0 @@
-create sequence hospede_seq owned by hospede.id;
